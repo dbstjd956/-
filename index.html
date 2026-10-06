@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>스마트 응급정보 카드</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;background:#f3f4f6;color:#111;font-size:17px}
+.wrap{max-width:560px;margin:0 auto;padding:14px}
+header{background:#d92d20;color:#fff;padding:14px;text-align:center;font-weight:800;font-size:19px}
+.card{background:#fff;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 4px #0002}
+.big{font-size:30px;font-weight:900}.lbl{font-size:13px;color:#667;font-weight:700;margin-bottom:4px}
+.blood{background:#fee4e2;border:3px solid #d92d20;text-align:center}.blood .big{color:#b42318;font-size:48px}
+.warn{background:#fff4e5;border:2px solid #f79009}.tag{display:inline-block;background:#fee4e2;color:#b42318;border-radius:20px;padding:6px 12px;margin:3px;font-weight:700}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:16px;font-size:19px;font-weight:800;color:#fff;background:#d92d20;text-align:center;text-decoration:none;margin:8px 0;cursor:pointer}
+.btn.g{background:#475467}.btn.b{background:#1d4ed8}.btn.s{padding:10px;font-size:15px}
+input,select,textarea{width:100%;padding:12px;font-size:17px;border:1px solid #ccd;border-radius:10px;margin:4px 0 10px;font-family:inherit}
+.pin{text-align:center;font-size:32px;letter-spacing:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #dde;padding:7px;text-align:left;vertical-align:top}th{background:#f2f4f7}
+.chg{background:#fef0c7;font-weight:700}.tl{border-left:4px solid #d92d20;padding-left:12px;margin:10px 0}
+.err{color:#b42318;font-weight:700;min-height:22px;text-align:center}small{color:#667}.row{display:flex;gap:8px}.row>*{flex:1}
+</style></head><body>
+<header>🚑 스마트 응급정보 카드</header>
+<div class="wrap" id="app"></div>
+<script>
+const PIN={em:"1111",ad:"9999"},KEY="eic_v1";
+const seed=[
+{id:"w1",name:"홍길동",co:"한빛건설 A현장",birth:"1975-03-12",blood:"A+",cond:["고혈압"],alg:["없음"],
+ contacts:[{n:"홍영희 (배우자)",t:"010-1111-2222"},{n:"보건관리자 이안전",t:"010-3333-4444"}],
+ rec:{2025:{bp:"135/88",chronic:"고혈압(약물 복용 중)",surg:"없음",note:"고소작업 시 주의"},2026:{bp:"148/95",chronic:"고혈압(수치 상승), 고지혈증 의심",surg:"없음",note:"약물 증량, 고소작업 제한 권고"}}},
+{id:"w2",name:"김철수",co:"한빛건설 B현장",birth:"1982-07-30",blood:"B+",cond:["없음"],alg:["벌침(아나필락시스 위험)"],
+ contacts:[{n:"김미나 (모친)",t:"010-5555-6666"},{n:"보건관리자 이안전",t:"010-3333-4444"}],
+ rec:{2025:{bp:"120/78",chronic:"없음",surg:"없음",note:"에피펜 소지"},2026:{bp:"122/80",chronic:"없음",surg:"2026-03 무릎 인대 수술",note:"에피펜 소지, 무릎 보호대 착용"}}},
+{id:"w3",name:"박영수",co:"한빛건설 C현장",birth:"1969-11-02",blood:"O-",cond:["당뇨(제2형)","심장질환(부정맥)"],alg:["페니실린"],
+ contacts:[{n:"박지은 (자녀)",t:"010-7777-8888"},{n:"보건관리자 이안전",t:"010-3333-4444"}],
+ rec:{2025:{bp:"128/82",chronic:"당뇨, 부정맥",surg:"2023 스텐트 시술",note:"항응고제 복용"},2026:{bp:"132/84",chronic:"당뇨(혈당 상승), 부정맥",surg:"2023 스텐트 시술",note:"항응고제 복용, 출혈 주의"}}}];
+let W;try{W=JSON.parse(localStorage.getItem(KEY))||seed}catch(e){W=seed}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(W))}catch(e){}};
+const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const q=new URLSearchParams(location.search);let role=null,cur=q.get("id")||"w1";
+const find=id=>W.find(w=>w.id==id)||W[0];
+const call=c=>`<a class="btn" href="tel:${c.t.replace(/-/g,"")}">📞 ${esc(c.n)}<br>${esc(c.t)}</a>`;
+
+function login(){$("#app").innerHTML=`<div class="card"><h2 style="margin-top:0">🔒 PIN 번호 입력</h2>
+<p>대상: <b>${esc(find(cur).name)}</b></p>
+<input id="pin" class="pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
+<div class="err" id="err"></div><button class="btn" onclick="chk()">확인</button>
+<small>시연용 PIN — 구급대원: 1111 / 관리자: 9999</small></div>`;
+$("#pin").addEventListener("keydown",e=>e.key=="Enter"&&chk());}
+function chk(){const v=$("#pin").value;
+ if(v==PIN.em){role="em";em()}else if(v==PIN.ad){role="ad";ad()}else{$("#err").textContent="PIN이 올바르지 않습니다";$("#pin").value=""}}
+
+function em(){const w=find(cur);window.scrollTo(0,0);
+$("#app").innerHTML=`<div class="card blood"><div class="lbl">혈액형</div><div class="big">${esc(w.blood)}</div><b>${esc(w.name)}</b> · ${esc(w.co)}</div>
+<div class="card warn"><div class="lbl">⚠️ 기저질환</div>${w.cond.map(c=>`<span class="tag">${esc(c)}</span>`).join("")}
+<div class="lbl" style="margin-top:10px">⚠️ 알레르기</div>${w.alg.map(c=>`<span class="tag">${esc(c)}</span>`).join("")}</div>
+<div class="card"><div class="lbl">📞 비상연락망 (터치하여 전화)</div>${w.contacts.map(call).join("")}</div>
+${lastRec(w)}<button class="btn g s" onclick="login()">🔒 잠금</button>`;}
+function lastRec(w){const y=Math.max(...Object.keys(w.rec)),r=w.rec[y];
+return `<div class="card"><div class="lbl">최근 건강상태 (${y}년)</div>혈압 <b>${esc(r.bp)}</b><br>특이사항: ${esc(r.note)}<br>수술이력: ${esc(r.surg)}</div>`}
+
+function ad(){const w=find(cur);window.scrollTo(0,0);
+const ys=Object.keys(w.rec).sort(),rows=[["bp","혈압"],["chronic","만성질환"],["surg","수술 이력"],["note","특이사항"]];
+const tbl=`<div style="overflow-x:auto"><table><tr><th>항목</th>${ys.map(y=>`<th>${y}</th>`).join("")}</tr>`+
+rows.map(([k,l])=>`<tr><td><b>${l}</b></td>${ys.map((y,i)=>`<td class="${i&&w.rec[y][k]!=w.rec[ys[i-1]][k]?"chg":""}">${esc(w.rec[y][k])}</td>`).join("")}</tr>`).join("")+`</table></div><small>🟨 노란색 = 전년 대비 변경됨</small>`;
+const tl=[...ys].reverse().map(y=>`<div class="tl"><b>${y}년</b> — 혈압 ${esc(w.rec[y].bp)} / ${esc(w.rec[y].chronic)}</div>`).join("");
+const L=ys[ys.length-1],lr=w.rec[L];
+$("#app").innerHTML=`<div class="card"><div class="lbl">👤 작업자 선택</div><select onchange="cur=this.value;ad()">${W.map(x=>`<option value="${x.id}" ${x.id==cur?"selected":""}>${esc(x.name)} (${esc(x.blood)})</option>`).join("")}</select>
+<div class="row"><button class="btn g s" onclick="em()">구급대원 화면 보기</button><button class="btn g s" onclick="newW()">+ 작업자 추가</button></div></div>
+<div class="card blood"><div class="big" style="font-size:36px">${esc(w.name)} · ${esc(w.blood)}</div>${esc(w.co)} · ${esc(w.birth)}</div>
+<div class="card"><div class="lbl">📞 비상연락망</div>${w.contacts.map(call).join("")}</div>
+<div class="card"><div class="lbl">📊 연도별 비교</div>${tbl}</div>
+<div class="card"><div class="lbl">🕒 타임라인</div>${tl}</div>
+<div class="card"><div class="lbl">✏️ 기본정보 수정</div>
+혈액형<input id="eb" value="${esc(w.blood)}">기저질환 (쉼표 구분)<input id="ec" value="${esc(w.cond.join(","))}">알레르기 (쉼표 구분)<input id="ea" value="${esc(w.alg.join(","))}">
+비상연락처 1 (이름/번호)<div class="row"><input id="n0" value="${esc(w.contacts[0]?.n)}"><input id="t0" value="${esc(w.contacts[0]?.t)}"></div>
+<button class="btn b" onclick="saveBase()">기본정보 저장</button></div>
+<div class="card"><div class="lbl">➕ 연도별 건강기록 추가/수정</div>
+연도<input id="ry" type="number" value="${+L+1}">혈압<input id="rb" value="${esc(lr.bp)}">만성질환<input id="rc" value="${esc(lr.chronic)}">수술 이력<input id="rs" value="${esc(lr.surg)}">특이사항<textarea id="rn" rows="2">${esc(lr.note)}</textarea>
+<button class="btn b" onclick="saveRec()">기록 저장</button></div>
+<button class="btn g s" onclick="if(confirm('샘플 데이터로 초기화할까요?')){W=JSON.parse(JSON.stringify(seed));save();cur='w1';ad()}">데이터 초기화</button>
+<button class="btn g s" onclick="login()">🔒 로그아웃</button>
+<div class="card"><small>이 작업자 QR 연결 URL:<br><b>${esc(location.origin+location.pathname)}?id=${w.id}</b></small></div>`;}
+function saveBase(){const w=find(cur),sp=s=>s.split(",").map(x=>x.trim()).filter(Boolean);
+w.blood=$("#eb").value;w.cond=sp($("#ec").value);w.alg=sp($("#ea").value);
+w.contacts[0]={n:$("#n0").value,t:$("#t0").value};save();ad();alert("저장되었습니다")}
+function saveRec(){const w=find(cur),y=$("#ry").value;if(!y)return;
+w.rec[y]={bp:$("#rb").value,chronic:$("#rc").value,surg:$("#rs").value,note:$("#rn").value};save();ad()}
+function newW(){const n=prompt("작업자 이름");if(!n)return;const id="w"+Date.now();
+W.push({id,name:n,co:"소속 입력",birth:"",blood:"미확인",cond:["없음"],alg:["없음"],contacts:[{n:"보호자",t:"010-0000-0000"}],rec:{[new Date().getFullYear()]:{bp:"-",chronic:"-",surg:"-",note:"-"}}});save();cur=id;ad()}
+login();
+</script></body></html>
